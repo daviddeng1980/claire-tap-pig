@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Claire 点猪游戏 - 升级版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #gameCanvas {
+            display: block;
+            cursor: crosshair;
+        }
+        
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .score-board {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 15px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .score-board span {
+            color: #FF6B6B;
+            font-size: 24px;
+        }
+        
+        #timer {
+            background: rgba(255, 107, 107, 0.9);
+            color: white;
+        }
+        
+        #lives {
+            background: rgba(255, 71, 87, 0.9);
+            color: white;
+        }
+        
+        #combo {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #333;
+        }
+        
+        #startScreen, #gameOverScreen, #legendScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal h1 {
+            color: #FF6B6B;
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+        
+        .modal h2 {
+            color: #333;
+            font-size: 24px;
+            margin: 20px 0 10px;
+        }
+        
+        .modal p {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+            text-align: left;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        
+        .legend-emoji {
+            font-size: 32px;
+        }
+        
+        .legend-text {
+            flex: 1;
+        }
+        
+        .legend-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .legend-score {
+            font-size: 14px;
+        }
+        
+        .legend-score.positive {
+            color: #2ecc71;
+        }
+        
+        .legend-score.negative {
+            color: #e74c3c;
+        }
+        
+        .legend-score.special {
+            color: #9b59b6;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5);
+        }
+        
+        .btn.secondary {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            box-shadow: 0 6px 20px rgba(116, 185, 255, 0.4);
+        }
+        
+        .final-score {
+            font-size: 48px;
+            color: #FF6B6B;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .score-popup {
+            position: absolute;
+            font-weight: bold;
+            font-size: 24px;
+            pointer-events: none;
+            animation: scoreFloat 1s ease-out forwards;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            z-index: 50;
+        }
+        
+        .score-popup.positive {
+            color: #2ecc71;
+        }
+        
+        .score-popup.negative {
+            color: #e74c3c;
+        }
+        
+        .score-popup.special {
+            color: #9b59b6;
+        }
+        
+        @keyframes scoreFloat {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-50px) scale(1.2);
+                opacity: 0;
+            }
+        }
+        
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .frozen {
+            animation: frozen 0.5s ease-in-out;
+        }
+        
+        @keyframes frozen {
+            0%, 100% { filter: none; }
+            50% { filter: hue-rotate(180deg) brightness(1.5); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+        <div class="score-board">
+            🐷 <span id="score">0</span>
+        </div>
+        <div class="score-board" id="combo">
+            🔥 x<span id="comboCount">0</span>
+        </div>
+        <div class="score-board" id="lives">
+            ❤️ <span id="livesCount">3</span>
+        </div>
+        <div class="score-board" id="timer">
+            ⏱️ <span id="timeLeft">60</span>秒
+        </div>
+    </div>
+    
+    <div id="startScreen">
+        <div class="modal">
+            <h1>🐷 Claire 点猪游戏</h1>
+            <p>点击小猪得分，但要小心狼和老虎！<br>还有披着狼皮的小猪，需要火眼金睛辨认！</p>
+            
+            <h2>📖 图鉴</h2>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <span class="legend-emoji">🐷</span>
+                    <div class="legend-text">
+                        <div class="legend-name">普通小猪</div>
+                        <div class="legend-score positive">+10分</div>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-emoji">🐽</span>
+                    <div class="legend-text">
+                        <div class="legend-name">猪鼻子</div>
+                        <div class="legend-score positive">+20分</div>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-emoji">🐖</span>
+                    <div class="legend-text">
+                        <div class="legend-name">大肥猪</div>
+                        <div class="legend-score positive">+30分</div>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-emoji">🐗</span>
+                    <div class="legend-text">
+                        <div class="legend-name">野猪</div>
+                        <div class="legend-score positive">+50分</div>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-emoji">🐺</span>
+                    <div class="legend-text">
+                        <div class="legend-name">狼</div>
+                        <div class="legend-score negative">-30分，扣1生命</div>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-emoji">🐯</span>
+                    <div class="legend-text">
+                        <div class="legend-name">老虎</div>
+                        <div class="legend-score negative">-50分，扣1生命</div>
+                    </div>
+                </div>
+                <div class="legend-item" style="grid-column: span 2;">
+                    <span class="legend-emoji">🐺</span>
+                    <div class="legend-text">
+                        <div class="legend-name">披着狼皮的小猪 ⭐</div>
+                        <div class="legend-score special">外表是狼，点击+100分！仔细看尾巴和耳朵...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <p><strong>你有 60 秒，3 条生命！</strong></p>
+            <button class="btn" onclick="startGame()">开始游戏</button>
+        </div>
+    </div>
+    
+    <div id="gameOverScreen" class="hidden">
+        <div class="modal">
+            <h1>🎉 游戏结束！</h1>
+            <p>最终得分：</p>
+            <div class="final-score" id="finalScore">0</div>
+            <p>最高连击：<span id="maxCombo">0</span></p>
+            <p id="comment"></p>
+            <button class="btn" onclick="restartGame()">再玩一次</button>
+            <button class="btn secondary" onclick="showLegend()">查看图鉴</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 游戏状态
+        let gameState = 'start';
+        let score = 0;
+        let timeLeft = 60;
+        let lives = 3;
+        let combo = 0;
+        let maxCombo = 0;
+        let animals = [];
+        let particles = [];
+        let spawnTimer = null;
+        let gameTimer = null;
+        
+        // 动物类型配置
+        const ANIMAL_TYPES = {
+            // 普通猪 - 安全
+            PIG_NORMAL: { emoji: '🐷', score: 10, size: 50, speed: 1, weight: 30, type: 'good' },
+            PIG_NOSE: { emoji: '🐽', score: 20, size: 40, speed: 1.5, weight: 25, type: 'good' },
+            PIG_BIG: { emoji: '🐖', score: 30, size: 60, speed: 0.8, weight: 20, type: 'good' },
+            PIG_WILD: { emoji: '🐗', score: 50, size: 45, speed: 2, weight: 10, type: 'good' },
+            
+            // 危险动物
+            WOLF: { emoji: '🐺', score: -30, size: 55, speed: 1.8, weight: 10, type: 'bad', damage: 1 },
+            TIGER: { emoji: '🐯', score: -50, size: 58, speed: 2.2, weight: 5, type: 'bad', damage: 1 },
+            
+            // 伪装猪 - 外表是狼，实际是小猪！
+            WOLF_IN_PIG: { emoji: '🐺', score: 100, size: 55, speed: 2, weight: 8, type: 'special', disguise: true }
+        };
+        
+        // 设置画布
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // 动物类
+        class Animal {
+            constructor() {
+                const typeConfig = this.randomType();
+                Object.assign(this, typeConfig);
+                
+                // 位置
+                this.x = Math.random() * (canvas.width - this.size * 2) + this.size;
+                this.y = Math.random() * (canvas.height - this.size * 2) + this.size;
+                
+                // 移动
+                const angle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(angle) * this.speed;
+                this.vy = Math.sin(angle) * this.speed;
+                
+                // 动画
+                this.bounce = 0;
+                this.bounceSpeed = 0.1 + Math.random() * 0.1;
+                this.rotation = 0;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.1;
+                
+                // 生命周期
+                this.life = 3000 + Math.random() * 4000;
+                this.maxLife = this.life;
+                
+                // 伪装猪的特殊标记
+                if (this.disguise) {
+                    this.revealTimer = 0;
+                    this.isRevealed = false;
+                }
+            }
+            
+            randomType() {
+                const types = Object.values(ANIMAL_TYPES);
+                const totalWeight = types.reduce((sum, t) => sum + t.weight, 0);
+                let random = Math.random() * totalWeight;
+                for (const type of types) {
+                    random -= type.weight;
+                    if (random <= 0) return { ...type };
+                }
+                return { ...types[0] };
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // 边界反弹
+                if (this.x < this.size || this.x > canvas.width - this.size) {
+                    this.vx *= -1;
+                    this.x = Math.max(this.size, Math.min(canvas.width - this.size, this.x));
+                }
+                if (this.y < this.size || this.y > canvas.height - this.size) {
+                    this.vy *= -1;
+                    this.y = Math.max(this.size, Math.min(canvas.height - this.size, this.y));
+                }
+                
+                this.bounce += this.bounceSpeed;
+                this.rotation += this.rotationSpeed;
+                this.life -= 16;
+                
+                // 伪装猪偶尔露出破绽
+                if (this.disguise) {
+                    this.revealTimer += 16;
+                    if (this.revealTimer > 1500) {
+                        this.isRevealed = true;
+                        if (this.revealTimer > 2000) {
+                            this.isRevealed = false;
+                            this.revealTimer = 0;
+                        }
+                    }
+                }
+            }
+            
+            draw() {
+                ctx.save();
+                
+                const lifeRatio = this.life / this.maxLife;
+                let alpha = 1;
+                if (lifeRatio < 0.3) {
+                    alpha = 0.5 + Math.sin(Date.now() * 0.02) * 0.5;
+                }
+                ctx.globalAlpha = alpha;
+                
+                // 伪装猪露出破绽时显示提示
+                if (this.disguise && this.isRevealed) {
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size * 0.8, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // 显示小猪轮廓
+                    ctx.globalAlpha = 0.5;
+                    ctx.font = `${this.size * 0.5}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('🐷', this.x + this.size * 0.3, this.y - this.size * 0.3);
+                    ctx.restore();
+                }
+                
+                // 危险动物红色警告光环
+                if (this.type === 'bad') {
+                    ctx.save();
+                    ctx.strokeStyle = `rgba(255, 0, 0, ${0.3 + Math.sin(Date.now() * 0.01) * 0.2})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size * 0.8, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                
+                // 阴影
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y + this.size/2, this.size/2, this.size/4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 绘制动物
+                const bounceY = Math.sin(this.bounce) * 5;
+                ctx.translate(this.x, this.y + bounceY);
+                ctx.rotate(this.rotation);
+                
+                ctx.font = `${this.size}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.emoji, 0, 0);
+                
+                ctx.restore();
+            }
+            
+            isClicked(x, y) {
+                const dist = Math.sqrt((x - this.x) ** 2 + (y - this.y) ** 2);
+                return dist < this.size;
+            }
+            
+            isDead() {
+                return this.life <= 0;
+            }
+        }
+        
+        // 粒子效果
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 10;
+                this.vy = (Math.random() - 0.5) * 10;
+                this.life = 30;
+                this.color = color;
+                this.size = Math.random() * 5 + 3;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.3;
+                this.life--;
+                this.size *= 0.95;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life / 30;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            isDead() {
+                return this.life <= 0;
+            }
+        }
+        
+        // 生成动物
+        function spawnAnimal() {
+            if (gameState !== 'playing') return;
+            
+            const maxAnimals = 4 + Math.floor(score / 100);
+            const spawnInterval = Math.max(400, 1200 - score * 3);
+            
+            if (animals.length < maxAnimals) {
+                animals.push(new Animal());
+            }
+            
+            spawnTimer = setTimeout(spawnAnimal, spawnInterval);
+        }
+        
+        // 创建点击特效
+        function createClickEffect(x, y, score, type) {
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            
+            if (type === 'bad') {
+                popup.classList.add('negative');
+                popup.textContent = `${score}`;
+            } else if (type === 'special') {
+                popup.classList.add('special');
+                popup.textContent = `+${score} 发现伪装！`;
+            } else {
+                popup.classList.add('positive');
+                popup.textContent = `+${score}`;
+            }
+            
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+            document.body.appendChild(popup);
+            setTimeout(() => popup.remove(), 1000);
+            
+            // 粒子
+            const colors = type === 'bad' ? ['#e74c3c', '#c0392b'] : 
+                          type === 'special' ? ['#9b59b6', '#FFD700'] : 
+                          ['#FFD700', '#FF6B6B', '#4ECDC4'];
+            for (let i = 0; i < 10; i++) {
+                particles.push(new Particle(x, y, colors[Math.floor(Math.random() * colors.length)]));
+            }
+        }
+        
+        // 游戏循环
+        function gameLoop() {
+            if (gameState !== 'playing') return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+            
+            animals = animals.filter(animal => {
+                animal.update();
+                animal.draw();
+                return !animal.isDead();
+            });
+            
+            particles = particles.filter(p => {
+                p.update();
+                p.draw();
+                return !p.isDead();
+            });
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function drawBackground() {
+            ctx.fillStyle = 'rgba(144, 238, 144, 0.1)';
+            for (let i = 0; i < 5; i++) {
+                const x = (Date.now() * 0.01 + i * 100) % canvas.width;
+                ctx.beginPath();
+                ctx.arc(x, canvas.height - 50, 30, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // 处理点击
+        function handleClick(e) {
+            if (gameState !== 'playing') return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+            const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+            
+            let hit = false;
+            
+            for (let i = animals.length - 1; i >= 0; i--) {
+                if (animals[i].isClicked(x, y)) {
+                    const animal = animals[i];
+                    
+                    if (animal.type === 'bad') {
+                        // 点到危险动物
+                        score += animal.score;
+                        lives -= animal.damage;
+                        combo = 0;
+                        createClickEffect(animal.x, animal.y, animal.score, 'bad');
+                        
+                        // 震动效果
+                        document.body.classList.add('shake');
+                        setTimeout(() => document.body.classList.remove('shake'), 500);
+                        
+                        if (lives <= 0) {
+                            endGame();
+                        }
+                    } else {
+                        // 点到猪或伪装猪
+                        let points = animal.score;
+                        
+                        // 连击加成
+                        combo++;
+                        if (combo > maxCombo) maxCombo = combo;
+                        if (combo > 1) {
+                            points = Math.floor(points * (1 + combo * 0.1));
+                        }
+                        
+                        score += points;
+                        createClickEffect(animal.x, animal.y, points, animal.type);
+                    }
+                    
+                    document.getElementById('score').textContent = score;
+                    document.getElementById('comboCount').textContent = combo;
+                    document.getElementById('livesCount').textContent = lives;
+                    
+                    animals.splice(i, 1);
+                    hit = true;
+                    break;
+                }
+            }
+            
+            if (!hit) {
+                combo = 0;
+                document.getElementById('comboCount').textContent = combo;
+            }
+        }
+        
+        // 开始游戏
+        function startGame() {
+            gameState = 'playing';
+            score = 0;
+            timeLeft = 60;
+            lives = 3;
+            combo = 0;
+            maxCombo = 0;
+            animals = [];
+            particles = [];
+            
+            document.getElementById('score').textContent = score;
+            document.getElementById('timeLeft').textContent = timeLeft;
+            document.getElementById('livesCount').textContent = lives;
+            document.getElementById('comboCount').textContent = combo;
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            
+            spawnAnimal();
+            
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timeLeft').textContent = timeLeft;
+                
+                if (timeLeft <= 0 || lives <= 0) {
+                    endGame();
+                }
+            }, 1000);
+            
+            gameLoop();
+        }
+        
+        // 结束游戏
+        function endGame() {
+            gameState = 'over';
+            clearInterval(gameTimer);
+            clearTimeout(spawnTimer);
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('maxCombo').textContent = maxCombo;
+            
+            let comment = '';
+            if (score < 0) comment = '被狼咬惨了...下次小心点！🐺';
+            else if (score < 200) comment = '还需要练习辨认狼和猪！👀';
+            else if (score < 500) comment = '不错的成绩！火眼金睛初成！🔥';
+            else if (score < 1000) comment = '太厉害了！伪装都逃不过你的眼睛！👏';
+            else comment = '传奇点猪大师！狼群都怕你了！🏆';
+            
+            document.getElementById('comment').textContent = comment;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+        
+        // 重新开始
+        function restartGame() {
+            startGame();
+        }
+        
+        // 显示图鉴
+        function showLegend() {
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+        
+        // 事件监听
+        canvas.addEventListener('mousedown', handleClick);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleClick(e);
+        }, { passive: false });
+        
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+        
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+    </script>
+</body>
+</html>
