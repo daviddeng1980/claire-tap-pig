@@ -588,7 +588,8 @@
             
             if (type === 'bad') {
                 popup.classList.add('negative');
-                popup.textContent = `${score}`;
+                popup.textContent = `💀 ${score}分`;
+                popup.style.fontSize = '28px';
             } else if (type === 'special') {
                 popup.classList.add('special');
                 popup.textContent = `+${score} 发现伪装！`;
