@@ -464,12 +464,8 @@
             draw() {
                 ctx.save();
                 
-                const lifeRatio = this.life / this.maxLife;
-                let alpha = 1;
-                if (lifeRatio < 0.3) {
-                    alpha = 0.8 + Math.sin(Date.now() * 0.02) * 0.2;
-                }
-                ctx.globalAlpha = alpha;
+                // 角色始终保持不透明
+                ctx.globalAlpha = 1;
                 
                 // 伪装猪露出破绽时显示提示
                 if (this.disguise && this.isRevealed) {
